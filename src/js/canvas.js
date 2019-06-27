@@ -3,16 +3,14 @@ import utils from './utils'
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 
-canvas.width = innerWidth
-canvas.height = innerHeight
-
-const colors = ['#2185C5', '#7ECEFD', '#FFF6E5', '#FF7F66']
+canvas.width = document.documentElement.clientWidth
+canvas.height = document.documentElement.clientHeight
 
 // Event Listeners
 
 addEventListener('resize', () => {
-    canvas.width = innerWidth
-    canvas.height = innerHeight
+    canvas.width = document.documentElement.clientWidth
+    canvas.height = document.documentElement.clientHeight
 
     init()
 })
@@ -32,11 +30,15 @@ function Star(x, y, radius, color) {
 }
 
 Star.prototype.draw = function() {
+    ctx.save()
     ctx.beginPath()
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false)
     ctx.fillStyle = this.color
+    ctx.shadowColor = '#e3eaef'
+    ctx.shadowBlur = 20
     ctx.fill()
     ctx.closePath()
+    ctx.restore()
 }
 
 Star.prototype.update = function() {
@@ -57,8 +59,7 @@ Star.prototype.update = function() {
 Star.prototype.shatter = function() {
     this.radius -= 3
     for(let i = 0; i < 8; i++) {
-        let color = utils.randomColor(colors)
-        miniStars.push(new MiniStar(this.x, this.y, 2, color))
+        miniStars.push(new MiniStar(this.x, this.y, 2, '#e3eaef'))
     }
 }
 
@@ -76,14 +77,16 @@ function MiniStar(x, y, radius, color) {
 }
 
 MiniStar.prototype.draw = function () {
+    ctx.save()
     ctx.beginPath()
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2)
-    ctx.save()
-    ctx.globalAlpha = this.opacity
-    ctx.restore()
+    ctx.shadowColor = '#e3eaef'
+    ctx.shadowBlur = 20
     ctx.fillStyle = this.color
+    ctx.globalAlpha = this.opacity
     ctx.fill()
     ctx.closePath()
+    ctx.restore()
 }
 
 MiniStar.prototype.update = function () {
@@ -96,45 +99,87 @@ MiniStar.prototype.update = function () {
 
     this.x += this.velocity.x
     this.y += this.velocity.y
-    this.ttl -= 1
+
     this.opacity -= 1 / this.ttl
+    if(this.opacity < 0) this.opacity = 0
+
+    this.ttl -= 1
 
     this.draw()
 }
 
+function createMountainRange(mountAmount, height, color) {
+    for(let i = 0; i < mountAmount; i++) {
+        const mountainWidth = canvas.width / mountAmount
+        ctx.beginPath()
+        ctx.moveTo(i * mountainWidth, canvas.height)
+        ctx.lineTo(i * mountainWidth + mountainWidth + 325, canvas.height)
+        ctx.lineTo(i * mountainWidth + mountainWidth / 2 , canvas.height - height)
+        ctx.lineTo(i * mountainWidth - 325, canvas.height)
+        ctx.closePath()
+        ctx.fillStyle = color
+        ctx.fill()
+    }
+}
+
 // Implementation
+const backgroundGradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+backgroundGradient.addColorStop(0, '#171e26')
+backgroundGradient.addColorStop(1, '#3f586b')
+
 let stars
 let miniStars
+let backgroundStars
 
 function init() {
     stars = []
     miniStars = []
+    backgroundStars = []
 
     for (let i = 0; i < 1; i++) {
-        let star = new Star(canvas.width / 2,canvas.height / 2, 30, 'red' )
+        let star = new Star(canvas.width / 2,canvas.height / 2, 12, '#e3eafe' )
 
         stars.push(star)
+    }
+
+    for (let i = 0; i < 100; i++) {
+        const x = Math.random() * canvas.width
+        const y = Math.random() * canvas.height
+        const radius = utils.randomIntFromRange(1, 3)
+        backgroundStars.push(new Star(x, y , radius, 'white'))
     }
 }
 
 // Animation Loop
 function animate() {
     requestAnimationFrame(animate)
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    stars.forEach((star, index) => {
+    ctx.fillStyle = backgroundGradient
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+
+    backgroundStars.forEach(star => {
+        star.draw()
+    })
+
+    createMountainRange(1, canvas.height - 50 , '#384551')
+    createMountainRange(2, canvas.height - 150, '#2b3843')
+    createMountainRange(3, canvas.height - 400, '#26333e')
+
+    stars.forEach((star, i) => {
         star.update()
         if(star.radius == 0) {
-            stars.splice(index, 1)
+            stars.splice(i, 1)
         }
     })
 
-    miniStars.forEach((miniStar, index) => {
+    miniStars.forEach((miniStar, i) => {
         miniStar.update()
         if (miniStar.ttl == 0) {
-            miniStars.splice(index, 1)
+            miniStars.splice(i, 1)
         }
     })
+
 }
 
 init()

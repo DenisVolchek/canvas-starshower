@@ -1,3 +1,4 @@
+const path = require('path')
 const BrowserSyncPlugin = require('browser-sync-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
@@ -5,8 +6,8 @@ module.exports = {
     mode: 'development',
     entry: './src/js/canvas.js',
     output: {
-        path: __dirname + '/dist/',
-        filename: './js/canvas.bundle.js'
+        path: path.resolve(__dirname, 'dist'),
+        filename: '[name][chunkhash].js'
     },
     module: {
         rules: [
